@@ -1,0 +1,88 @@
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date:    15:51:20 09/29/2025 
+-- Design Name: 
+-- Module Name:    TRANSMITTER - Behavioral 
+-- Project Name: 
+-- Target Devices: 
+-- Tool versions: 
+-- Description: 
+--
+-- Dependencies: 
+--
+-- Revision: 
+-- Revision 0.01 - File Created
+-- Additional Comments: 
+--
+----------------------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+entity uart_tx is
+    port (
+        clk       : in  std_logic;           -- System clock
+        reset     : in  std_logic;           -- Synchronous reset
+        tx_start  : in  std_logic;           -- Start transmission
+        tx_data   : in  std_logic_vector(7 downto 0); -- Data to transmit
+        baud_tick : in  std_logic;           -- Baud rate tick
+		  tx        : out std_logic;           -- UART TX output
+        tx_busy   : out std_logic            -- High when transmitting
+    );
+end uart_tx;
+architecture Behavioral of uart_tx is
+    type state_type is (IDLE, START, DATA, STOP);
+    signal state      : state_type := IDLE;
+    signal bit_count  : integer range 0 to 7 := 0;
+    signal shift_reg  : std_logic_vector(7 downto 0) := (others => '0');
+    signal tx_reg     : std_logic := '1';
+    signal busy_reg   : std_logic := '0';
+	 
+	 
+begin
+    process(clk, reset)
+    begin
+        if reset = '1' then
+            state     <= IDLE;
+            bit_count <= 0;
+            shift_reg <= (others => '0');
+            tx_reg    <= '1';
+            busy_reg  <= '0';
+				elsif rising_edge(clk) then
+            case state is
+                when IDLE =>
+                    tx_reg   <= '1';
+                    busy_reg <= '0';
+						  if tx_start = '1' then
+                        shift_reg <= tx_data;
+                        state     <= START;
+                        busy_reg  <= '1';
+                    end if;
+						  when START =>
+                    if baud_tick = '1' then
+                        tx_reg   <= '0'; -- Start bit
+                        bit_count <= 0;
+                        state    <= DATA;
+                    end if;
+						  when DATA =>
+                    if baud_tick = '1' then
+                        tx_reg   <= shift_reg(0); -- LSB first
+                        shift_reg <= '0' & shift_reg(7 downto 1);
+                        if bit_count = 7 then
+                            state <= STOP;
+									 else
+                            bit_count <= bit_count + 1;
+                        end if;
+                    end if;
+                when STOP =>
+                    if baud_tick = '1' then
+                        tx_reg   <= '1'; -- Stop bit
+                        state    <= IDLE;
+								end if;
+            end case;
+        end if;
+    end process;
+    tx     <= tx_reg;
+    tx_busy <= busy_reg;
+end Behavioral;
