@@ -1,0 +1,69 @@
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date:    16:01:14 09/29/2025 
+-- Design Name: 
+-- Module Name:    UART_TX_RX - Behavioral 
+-- Project Name: 
+-- Target Devices: 
+-- Tool versions: 
+-- Description: 
+--
+-- Dependencies: 
+--
+-- Revision: 
+-- Revision 0.01 - File Created
+-- Additional Comments: 
+--
+----------------------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+entity uart_top is
+    port (
+        clk      : in  std_logic;  -- 50 MHz system clock
+        reset    : in  std_logic;
+        tx_start : in  std_logic;  -- Start transmission
+        tx_data  : in  std_logic_vector(7 downto 0); -- Data to transmit
+        tx       : out std_logic;  -- UART TX output
+		  tx_busy  : out std_logic;  -- Transmitter busy flag
+        rx       : in  std_logic;  -- UART RX input
+        rx_data  : out std_logic_vector(7 downto 0); -- Received data
+        rx_ready : out std_logic   -- Data received flag
+    );
+end uart_top;
+architecture Behavioral of uart_top is
+    -- Signals to connect modules
+    signal baud_tick_sig : std_logic;
+begin
+    -- Instantiate Baud Rate Generator
+    baud_gen_inst : entity work.baud_gen
+        port map (
+            clk       => clk,
+            reset     => reset,
+            baud_tick => baud_tick_sig
+        );
+		  -- Instantiate UART Transmitter
+    uart_tx_inst : entity work.uart_tx
+        port map (
+            clk       => clk,
+            reset     => reset,
+            tx_start  => tx_start,
+            tx_data   => tx_data,
+            baud_tick => baud_tick_sig,
+            tx        => tx,
+            tx_busy   => tx_busy
+        );
+		   -- Instantiate UART Receiver
+    uart_rx_inst : entity work.uart_rx
+        port map (
+            clk       => clk,
+            reset     => reset,
+            rx        => rx,
+            baud_tick => baud_tick_sig,
+            rx_data   => rx_data,
+            rx_ready  => rx_ready
+        );
+
+end Behavioral;
