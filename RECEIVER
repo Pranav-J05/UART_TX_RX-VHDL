@@ -1,0 +1,97 @@
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date:    15:55:39 09/29/2025 
+-- Design Name: 
+-- Module Name:    RECEIVER - Behavioral 
+-- Project Name: 
+-- Target Devices: 
+-- Tool versions: 
+-- Description: 
+--
+-- Dependencies: 
+--
+-- Revision: 
+-- Revision 0.01 - File Created
+-- Additional Comments: 
+--
+----------------------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+entity uart_rx is
+    port (
+        clk       : in  std_logic;           -- System clock
+        reset     : in  std_logic;           -- Synchronous reset
+        rx        : in  std_logic;           -- UART RX input
+        baud_tick : in  std_logic;           -- Baud rate tick
+        rx_data   : out std_logic_vector(7 downto 0); -- Received data
+        rx_ready  : out std_logic            -- High for one clk when data valid
+    );
+end uart_rx;
+architecture Behavioral of uart_rx is
+    type state_type is (IDLE, START, DATA, STOP);
+    signal state      : state_type := IDLE;
+    signal bit_count  : integer range 0 to 7 := 0;
+    signal shift_reg  : std_logic_vector(7 downto 0) := (others => '0');
+    signal rx_reg     : std_logic := '1';
+    signal ready_reg  : std_logic := '0';
+    signal rx_sync    : std_logic := '1';
+    signal rx_prev    : std_logic := '1';
+	 
+begin
+    process(clk, reset)
+    begin
+        if reset = '1' then
+            state     <= IDLE;
+            bit_count <= 0;
+            shift_reg <= (others => '0');
+            rx_reg    <= '1';
+            ready_reg <= '0';
+            rx_sync   <= '1';
+            rx_prev   <= '1';
+				elsif rising_edge(clk) then
+            rx_prev <= rx_sync;
+            rx_sync <= rx;
+            ready_reg <= '0';
+            case state is
+                when IDLE =>
+                    if (rx_prev = '1' and rx_sync = '0') then -- Detect start bit (falling edge)
+                        state <= START;
+                    end if;
+						   when START =>
+                    if baud_tick = '1' then
+                        if rx_sync = '0' then -- Confirm still low (valid start bit)
+                            bit_count <= 0;
+                            state <= DATA;
+                        else
+                            state <= IDLE; -- False start, go back to idle
+                        end if;
+                    end if;
+						  when DATA =>
+                    if baud_tick = '1' then
+                        shift_reg <= rx_sync & shift_reg(7 downto 1); -- LSB first
+                        if bit_count = 7 then
+                            state <= STOP;
+                        else
+                            bit_count <= bit_count + 1;
+                        end if;
+                    end if;
+						  when STOP =>
+                    if baud_tick = '1' then
+                        if rx_sync = '1' then -- Stop bit should be high
+                            rx_reg    <= '1';
+                            ready_reg <= '1';
+                            state     <= IDLE;
+                        else
+								state <= IDLE; -- Framing error, ignore
+                        end if;
+                    end if;
+            end case;
+        end if;
+    end process;
+    rx_data  <= shift_reg;
+    rx_ready <= ready_reg;
+end Behavioral;
+
