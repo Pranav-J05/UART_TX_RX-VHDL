@@ -5,11 +5,13 @@ A UART transmitter (8N1: 8 data bits, no parity, 1 stop bit)
 A UART receiver (8N1)
 A top-level module integrating all components
 A testbench for simulation and verification
+
 Features:
 Fully synthesizable VHDL code
 Modular design: each function in its own file
 Loopback testbench: TX output is fed to RX input for self-test
 Easy to adapt for other baud rates or clock frequencies
+
 Directory Structure:
 1) baud_gen.vhd      # Baud rate generator
 2)  uart_tx.vhd       # UART transmitter
@@ -20,6 +22,7 @@ Directory Structure:
 1. Baud Rate Generator
 Designed a module to divide the 50 MHz system clock down to a 9600 Hz tick (baud rate).
 Output: baud_tick signal pulses once per UART bit period.
+
 2. UART Transmitter
 Created a VHDL module that:
 Waits for a tx_start signal
@@ -48,7 +51,10 @@ Print received bytes to the simulator console (if supported)
 Ensured simulation runs long enough for UART timing (at least a few ms)
 
 How to Use:
+
 Add all VHDL files to your Xilinx ISE project.
+
 Set uart_top.vhd as the top module for synthesis/implementation.
+
 Simulate with uart_top_tb.vhd to verify functionality.
 
