@@ -11,11 +11,11 @@ Modular design: each function in its own file
 Loopback testbench: TX output is fed to RX input for self-test
 Easy to adapt for other baud rates or clock frequencies
 Directory Structure:
-├── baud_gen.vhd      # Baud rate generator
-├── uart_tx.vhd       # UART transmitter
-├── uart_rx.vhd       # UART receiver
-├── uart_top.vhd      # Top-level integration
-├── uart_top_tb.vhd   # Testbench
+1) baud_gen.vhd      # Baud rate generator
+2)  uart_tx.vhd       # UART transmitter
+3)  uart_rx.vhd       # UART receiver
+4)   art_top.vhd      # Top-level integration
+5)   rt_top_tb.vhd   # Testbench
 
 1. Baud Rate Generator
 Designed a module to divide the 50 MHz system clock down to a 9600 Hz tick (baud rate).
